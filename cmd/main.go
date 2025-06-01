@@ -45,5 +45,23 @@ func main() {
 		log.Fatalf("Cannot scan directory: %v", err)
 	}
 
-	log.Println("Directory scan completed")
+	log.Println("Directory scan completed, getting the results...")
+
+	fcg := fileChecker.GetDuplicatedFileGroups()
+	if len(fcg) == 0 {
+		log.Println("No duplicated files found")
+		return
+	}
+
+	fmt.Printf("Found %d duplicated files groups\n", len(fcg))
+	for _, fcg := range fcg {
+		fmt.Printf("Duplicated files group: %s\n", fcg.Hash())
+		for _, file := range fcg.Files() {
+			fmt.Printf("- %s\n", file)
+		}
+
+		fmt.Println()
+	}
+
+	log.Println("Done")
 }
