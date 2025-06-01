@@ -59,11 +59,11 @@ func (ds *DirectoryScanner) Scan() error {
 					Str("hash", checkRes).
 					Msg("File was checked")
 			}
-		}
 
-		counter++
-		if counter%summaryPeriod == 0 {
-			ds.logger.Info().Msgf("%d files processed...", counter)
+			counter++
+			if counter%summaryPeriod == 0 {
+				ds.logger.Info().Msgf("%d files processed...", counter)
+			}
 		}
 
 		return nil
