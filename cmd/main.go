@@ -3,15 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/pryazhnikov/gofileschecker/internal/checkers"
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
+	"github.com/rs/zerolog"
 )
 
 type runParameters struct {
-	path string
+	path  string
+	debug bool
 	// Future parameters can be easily added here
 }
 
@@ -19,6 +20,7 @@ func parseParameters() *runParameters {
 	params := &runParameters{}
 
 	flag.StringVar(&params.path, "path", "", "Path to directory for scanning")
+	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
 
 	flag.Parse()
 
@@ -32,24 +34,37 @@ func parseParameters() *runParameters {
 	return params
 }
 
+func newLogger(debug bool) zerolog.Logger {
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	logger := zerolog.New(os.Stdout).With().Timestamp().Logger()
+
+	level := zerolog.InfoLevel
+	if debug {
+		level = zerolog.DebugLevel
+	}
+
+	return logger.Level(level)
+}
+
 func main() {
 	params := parseParameters()
+	logger := newLogger(params.debug)
 
-	log.Printf("Starting directory scan at: %s\n", params.path)
+	logger.Info().Str("path", params.path).Msg("Starting directory scan")
 
 	fileChecker := checkers.NewFileChecker()
 
-	scanner := scanner.NewDirectoryScanner(params.path, fileChecker)
+	scanner := scanner.NewDirectoryScanner(logger, params.path, fileChecker)
 	err := scanner.Scan()
 	if err != nil {
-		log.Fatalf("Cannot scan directory: %v", err)
+		logger.Fatal().Err(err).Msg("Cannot scan directory")
 	}
 
-	log.Println("Directory scan completed, getting the results...")
+	logger.Info().Msg("Directory scan completed, getting the results...")
 
 	fcg := fileChecker.GetDuplicatedFileGroups()
 	if len(fcg) == 0 {
-		log.Println("No duplicated files found")
+		logger.Info().Msg("No duplicated files found")
 		return
 	}
 
@@ -63,5 +78,5 @@ func main() {
 		fmt.Println()
 	}
 
-	log.Println("Done")
+	logger.Info().Msg("Done")
 }

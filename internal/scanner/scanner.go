@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+
+	"github.com/rs/zerolog"
 )
 
+const summaryPeriod = 100
+
 type DirectoryScanner struct {
+	logger   zerolog.Logger
 	rootPath string
 	checker  FileChecker
 }
@@ -15,11 +20,20 @@ type FileChecker interface {
 	Check(path string) (string, error)
 }
 
-func NewDirectoryScanner(rootPath string, checker FileChecker) *DirectoryScanner {
-	return &DirectoryScanner{rootPath: rootPath, checker: checker}
+func NewDirectoryScanner(logger zerolog.Logger, rootPath string, checker FileChecker) *DirectoryScanner {
+	return &DirectoryScanner{
+		logger:   logger,
+		rootPath: rootPath,
+		checker:  checker,
+	}
 }
 
 func (ds *DirectoryScanner) Scan() error {
+	ds.logger.Debug().
+		Str("dir", ds.rootPath).
+		Msg("Directory scanning start")
+
+	counter := 0
 	err := filepath.WalkDir(ds.rootPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -27,15 +41,31 @@ func (ds *DirectoryScanner) Scan() error {
 
 		if d.IsDir() {
 			// Nothing to do here
-			fmt.Printf("Directory: %s\n", path)
+			ds.logger.Debug().
+				Str("path", path).
+				Msg("Directory found")
 		} else {
+			ds.logger.Debug().
+				Str("path", path).
+				Msg("File found")
 			checkRes, err := ds.checker.Check(path)
 			if err != nil {
-				fmt.Printf("File: %s - cannot check\n", path)
+				ds.logger.Warn().
+					Str("path", path).
+					Msgf("Cannot check file: %v", err)
 			} else {
-				fmt.Printf("File: %s (result: %s)\n", path, checkRes)
+				ds.logger.Debug().
+					Str("path", path).
+					Str("hash", checkRes).
+					Msg("File was checked")
+			}
+
+			counter++
+			if counter%summaryPeriod == 0 {
+				ds.logger.Info().Msgf("%d files processed...", counter)
 			}
 		}
+
 		return nil
 	})
 
