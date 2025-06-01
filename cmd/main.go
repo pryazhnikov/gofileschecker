@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 
+	"github.com/pryazhnikov/gofileschecker/internal/checkers"
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
 )
 
@@ -33,13 +35,15 @@ func parseParameters() *runParameters {
 func main() {
 	params := parseParameters()
 
-	scanner := scanner.NewDirectoryScanner(params.path)
+	log.Printf("Starting directory scan at: %s\n", params.path)
+
+	fileChecker := checkers.NewFileChecker()
+
+	scanner := scanner.NewDirectoryScanner(params.path, fileChecker)
 	err := scanner.Scan()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-		os.Exit(1)
+		log.Fatalf("Cannot scan directory: %v", err)
 	}
 
-	// Now you can use params.path for directory scanning
-	fmt.Printf("Starting directory scan at: %s\n", params.path)
+	log.Println("Directory scan completed")
 }
