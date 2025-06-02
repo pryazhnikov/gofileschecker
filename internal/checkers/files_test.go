@@ -22,7 +22,7 @@ func TestNewFilesCheckGroup(t *testing.T) {
 	assert.Len(t, files, 1, "Should have exactly one file")
 	assert.Equal(t, expectedFile, files[0], "File should match the input value")
 
-	assert.False(t, fcg.HasMuttipleFiles(), "HasMuttipleFiles should be false for single file")
+	assert.False(t, fcg.HasMultipleFiles(), "HasMultipleFiles should be false for single file")
 }
 
 func TestFilesCheckGroup_AddFile(t *testing.T) {
@@ -30,7 +30,7 @@ func TestFilesCheckGroup_AddFile(t *testing.T) {
 	initialHash := "test-hash"
 	initialFile := "file1.txt"
 	fcg := newFilesCheckGroup(initialHash, initialFile)
-	assert.False(t, fcg.HasMuttipleFiles(), "HasMuttipleFiles should be false initially")
+	assert.False(t, fcg.HasMultipleFiles(), "HasMultipleFiles should be false initially")
 
 	// Act
 	fcg.addFile("file2.txt")
@@ -43,5 +43,5 @@ func TestFilesCheckGroup_AddFile(t *testing.T) {
 	assert.Equal(t, initialFile, files[0], "First file should match initial file")
 	assert.Equal(t, "file2.txt", files[1], "Second file should match added file")
 
-	assert.True(t, fcg.HasMuttipleFiles(), "HasMuttipleFiles should be true after adding file")
+	assert.True(t, fcg.HasMultipleFiles(), "HasMultipleFiles should be true after adding file")
 }

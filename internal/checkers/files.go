@@ -19,7 +19,7 @@ func (fcg *FilesCheckGroup) addFile(file string) {
 	fcg.files = append(fcg.files, file)
 }
 
-func (fcg *FilesCheckGroup) HasMuttipleFiles() bool {
+func (fcg *FilesCheckGroup) HasMultipleFiles() bool {
 	return len(fcg.files) > 1
 }
 
@@ -85,7 +85,7 @@ func (fc *FileChecker) GetDuplicatedFileGroups() []*FilesCheckGroup {
 
 	var result []*FilesCheckGroup
 	for _, hfr := range fc.fileGroups {
-		if hfr.HasMuttipleFiles() {
+		if hfr.HasMultipleFiles() {
 			result = append(result, hfr)
 		}
 	}
