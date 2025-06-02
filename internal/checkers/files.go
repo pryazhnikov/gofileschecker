@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"slices"
 	"sync"
 
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
@@ -15,20 +16,35 @@ type FilesCheckGroup struct {
 	files []string
 }
 
+func (fcg *FilesCheckGroup) HasFile(file string) bool {
+	return slices.Contains(fcg.files, file)
+}
+
 func (fcg *FilesCheckGroup) addFile(file string) {
+	if fcg.HasFile(file) {
+		return
+	}
+
+	// Using slices is not the best option from time complexity perspective,
+	// but we do not expected adding multiple files with the same hash many times.
+	// So keeping a bit simpler slice-based solution instead of a map-based alternative.
 	fcg.files = append(fcg.files, file)
-}
-
-func (fcg *FilesCheckGroup) HasMultipleFiles() bool {
-	return len(fcg.files) > 1
-}
-
-func (fcg *FilesCheckGroup) Hash() string {
-	return fcg.hash
 }
 
 func (fcg *FilesCheckGroup) Files() []string {
 	return fcg.files
+}
+
+func (fcg *FilesCheckGroup) FilesCount() int {
+	return len(fcg.files)
+}
+
+func (fcg *FilesCheckGroup) HasMultipleFiles() bool {
+	return fcg.FilesCount() > 1
+}
+
+func (fcg *FilesCheckGroup) Hash() string {
+	return fcg.hash
 }
 
 func newFilesCheckGroup(hash string, file string) *FilesCheckGroup {

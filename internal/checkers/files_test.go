@@ -45,3 +45,18 @@ func TestFilesCheckGroup_AddFile(t *testing.T) {
 
 	assert.True(t, fcg.HasMultipleFiles(), "HasMultipleFiles should be true after adding file")
 }
+
+func TestFilesCheckGroup_AddTheSameFile(t *testing.T) {
+	// Arrange
+	initialHash := "test-hash"
+	initialFile := "file1.txt"
+	fcg := newFilesCheckGroup(initialHash, initialFile)
+	assert.False(t, fcg.HasMultipleFiles(), "HasMultipleFiles should be false initially")
+	assert.Equal(t, 1, fcg.FilesCount(), "The only file is expected")
+
+	// Act
+	fcg.addFile(initialFile)
+
+	// Assert
+	assert.Equal(t, 1, fcg.FilesCount(), "The only file is expected after adding the same one again")
+}
