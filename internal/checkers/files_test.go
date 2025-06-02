@@ -46,6 +46,24 @@ func TestFilesCheckGroup_AddFile(t *testing.T) {
 	assert.True(t, fcg.HasMultipleFiles(), "HasMultipleFiles should be true after adding file")
 }
 
+func TestFilesCheckGroup_HasFile(t *testing.T) {
+	// Arrange
+	initialHash := "test-hash"
+	initialFile := "file1.txt"
+	fcg := newFilesCheckGroup(initialHash, initialFile)
+
+	// Act & Assert
+	assert.True(t, fcg.HasFile(initialFile), "Should return true for existing file")
+	assert.False(t, fcg.HasFile("non-existent.txt"), "Should return false for non-existent file")
+
+	// Add another file and verify
+	extraFile := "file2.txt"
+	assert.NotEqual(t, initialFile, extraFile, "Precondition failed: file names should be different")
+
+	fcg.addFile(extraFile)
+	assert.True(t, fcg.HasFile(extraFile), "Should return true for newly added file")
+}
+
 func TestFilesCheckGroup_AddTheSameFile(t *testing.T) {
 	// Arrange
 	initialHash := "test-hash"
