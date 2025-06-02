@@ -48,13 +48,15 @@ func newLogger(debug bool) zerolog.Logger {
 
 func main() {
 	params := parseParameters()
-	logger := newLogger(params.debug)
 
-	logger.Info().Str("path", params.path).Msg("Starting directory scan")
+	logger := newLogger(params.debug)
+	logger.Info().Msgf("Logger level set: %s", logger.GetLevel().String())
 
 	fileChecker := checkers.NewFileChecker()
-
 	scanner := scanner.NewDirectoryScanner(logger, params.path, fileChecker)
+
+	// todo: add an ability to scan multiple directories
+	logger.Info().Msgf("Starting directory scan: %s", params.path)
 	err := scanner.Scan()
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Cannot scan directory")
