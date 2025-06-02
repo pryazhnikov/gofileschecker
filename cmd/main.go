@@ -53,11 +53,10 @@ func main() {
 	logger.Info().Msgf("Logger level set: %s", logger.GetLevel().String())
 
 	fileChecker := checkers.NewFileChecker()
-	scanner := scanner.NewDirectoryScanner(logger, params.path, fileChecker)
+	scanner := scanner.NewDirectoryScanner(logger, fileChecker)
 
 	// todo: add an ability to scan multiple directories
-	logger.Info().Msgf("Starting directory scan: %s", params.path)
-	err := scanner.Scan()
+	err := scanner.Scan(params.path)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Cannot scan directory")
 	}

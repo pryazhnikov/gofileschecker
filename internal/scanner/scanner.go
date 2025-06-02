@@ -11,30 +11,26 @@ import (
 const summaryPeriod = 100
 
 type DirectoryScanner struct {
-	logger   zerolog.Logger
-	rootPath string
-	checker  FileChecker
+	logger  zerolog.Logger
+	checker FileChecker
 }
 
 type FileChecker interface {
 	Check(path string) (string, error)
 }
 
-func NewDirectoryScanner(logger zerolog.Logger, rootPath string, checker FileChecker) *DirectoryScanner {
+func NewDirectoryScanner(logger zerolog.Logger, checker FileChecker) *DirectoryScanner {
 	return &DirectoryScanner{
-		logger:   logger,
-		rootPath: rootPath,
-		checker:  checker,
+		logger:  logger,
+		checker: checker,
 	}
 }
 
-func (ds *DirectoryScanner) Scan() error {
-	ds.logger.Debug().
-		Str("dir", ds.rootPath).
-		Msg("Directory scanning start")
+func (ds *DirectoryScanner) Scan(rootPath string) error {
+	ds.logger.Info().Msgf("Starting directory scan: %s", rootPath)
 
 	counter := 0
-	err := filepath.WalkDir(ds.rootPath, func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
