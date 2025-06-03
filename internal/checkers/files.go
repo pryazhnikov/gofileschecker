@@ -111,20 +111,34 @@ func newFilesCheckGroup(hash string, file string) *FilesCheckGroup {
 }
 
 type FileChecker struct {
-	fileGroups map[string]*FilesCheckGroup
-	mu         sync.RWMutex
+	fileGroups     map[string]*FilesCheckGroup
+	skipEmptyFiles bool
+	mu             sync.RWMutex
 }
 
 // Ensure FileChecker implements scanner.FileChecker interface
 var _ scanner.FileChecker = (*FileChecker)(nil)
 
-func NewFileChecker() *FileChecker {
+func NewFileChecker(skipEmptyFiles bool) *FileChecker {
 	return &FileChecker{
-		fileGroups: make(map[string]*FilesCheckGroup),
+		skipEmptyFiles: skipEmptyFiles,
+		fileGroups:     make(map[string]*FilesCheckGroup),
 	}
 }
 
 func (fc *FileChecker) Check(path string) (string, error) {
+	if fc.skipEmptyFiles {
+		fileInfo, err := os.Stat(path)
+		if err != nil {
+			return "", fmt.Errorf("failed to get file info: %w", err)
+		}
+
+		// Idea: all empty files have the same hash and will be combined in the same group
+		if fileInfo.Size() == 0 {
+			return "", fmt.Errorf("skipping empty file")
+		}
+	}
+
 	file, err := os.Open(path)
 	if err != nil {
 		return "", fmt.Errorf("failed to open file: %w", err)

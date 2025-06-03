@@ -15,6 +15,7 @@ type runParameters struct {
 	path            string // Path to directory for scanning
 	debug           bool   // Enable debug logging
 	showGroupPrefix bool   // Show common path prefix for the found groups
+	skipEmptyFiles  bool   // Do not process empty files
 }
 
 func parseParameters() (*runParameters, error) {
@@ -23,6 +24,7 @@ func parseParameters() (*runParameters, error) {
 	flag.StringVar(&params.path, "path", "", "Path to directory for scanning")
 	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
 	flag.BoolVar(&params.showGroupPrefix, "prefix", false, "Show common path prefix for file groups")
+	flag.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
 
 	flag.Parse()
 
@@ -57,7 +59,7 @@ func main() {
 	logger := newLogger(params.debug)
 	logger.Info().Msgf("Logger level set: %s", logger.GetLevel().String())
 
-	fileChecker := checkers.NewFileChecker()
+	fileChecker := checkers.NewFileChecker(params.skipEmptyFiles)
 	scanner := scanner.NewDirectoryScanner(logger, fileChecker)
 
 	// todo: add an ability to scan multiple directories
