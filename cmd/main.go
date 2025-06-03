@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pryazhnikov/gofileschecker/internal/checkers"
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
@@ -11,9 +12,9 @@ import (
 )
 
 type runParameters struct {
-	path  string
-	debug bool
-	// Future parameters can be easily added here
+	path            string // Path to directory for scanning
+	debug           bool   // Enable debug logging
+	showGroupPrefix bool   // Show common path prefix for the found groups
 }
 
 func parseParameters() *runParameters {
@@ -21,6 +22,7 @@ func parseParameters() *runParameters {
 
 	flag.StringVar(&params.path, "path", "", "Path to directory for scanning")
 	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
+	flag.BoolVar(&params.showGroupPrefix, "prefix", false, "Show common path prefix for file groups")
 
 	flag.Parse()
 
@@ -71,9 +73,22 @@ func main() {
 
 	fmt.Printf("Found %d duplicated files groups\n", len(fcg))
 	for _, fcg := range fcg {
-		fmt.Printf("Duplicated files group: %s\n", fcg.Hash())
+		fmt.Printf(
+			"Duplicated files group: %s\n",
+			fcg.Hash(),
+		)
+
+		pathPrefix := ""
+		if params.showGroupPrefix {
+			pathPrefix = fcg.CommonPathPrefix()
+			if pathPrefix != "" {
+				fmt.Println(pathPrefix)
+			}
+		}
+
 		for _, file := range fcg.Files() {
-			fmt.Printf("- %s\n", file)
+			relativePath := strings.TrimPrefix(file, pathPrefix)
+			fmt.Printf("- %s\n", relativePath)
 		}
 
 		fmt.Println()
