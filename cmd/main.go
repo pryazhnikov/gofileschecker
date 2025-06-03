@@ -17,7 +17,7 @@ type runParameters struct {
 	showGroupPrefix bool   // Show common path prefix for the found groups
 }
 
-func parseParameters() *runParameters {
+func parseParameters() (*runParameters, error) {
 	params := &runParameters{}
 
 	flag.StringVar(&params.path, "path", "", "Path to directory for scanning")
@@ -28,12 +28,10 @@ func parseParameters() *runParameters {
 
 	// Validate required parameters
 	if params.path == "" {
-		fmt.Fprintln(os.Stderr, "Error: path parameter is required")
-		flag.Usage()
-		os.Exit(1)
+		return nil, fmt.Errorf("path parameter is required")
 	}
 
-	return params
+	return params, nil
 }
 
 func newLogger(debug bool) zerolog.Logger {
@@ -49,7 +47,12 @@ func newLogger(debug bool) zerolog.Logger {
 }
 
 func main() {
-	params := parseParameters()
+	params, err := parseParameters()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	logger := newLogger(params.debug)
 	logger.Info().Msgf("Logger level set: %s", logger.GetLevel().String())
@@ -58,7 +61,7 @@ func main() {
 	scanner := scanner.NewDirectoryScanner(logger, fileChecker)
 
 	// todo: add an ability to scan multiple directories
-	err := scanner.Scan(params.path)
+	err = scanner.Scan(params.path)
 	if err != nil {
 		logger.Fatal().Err(err).Msg("Cannot scan directory")
 	}
