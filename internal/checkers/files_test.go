@@ -79,6 +79,38 @@ func TestFilesCheckGroup_AddTheSameFile(t *testing.T) {
 	assert.Equal(t, 1, fcg.FilesCount(), "The only file is expected after adding the same one again")
 }
 
+// The changes in the slice returned by Files() should not change the state of FilesCheckGroup
+func TestFilesCheckGroup_FilesShouldBeImmutable(t *testing.T) {
+	initialHash := "test-hash"
+	initialFile := "file1.txt"         // Should be placed into check group
+	modifedFile := "modified-file.txt" // Should NOT be placed into the check group
+
+	assert.NotEqual(t, initialFile, modifedFile, "Precondition failed: files should be different")
+
+	// Arrange
+	fcg := newFilesCheckGroup(initialHash, initialFile)
+
+	assert.True(t, fcg.HasFile(initialFile), "Group should contain the initial file")
+	assert.False(t, fcg.HasFile(modifedFile), "Group should not contain the modified file")
+
+	// Act
+	files := fcg.Files()
+	originalLen := len(files)
+
+	// Modify the returned slice by changing existing value
+	// We should modify the existing values here, append usage is not allowed
+	// (because it can change the resurned slice pointer)
+	files[0] = modifedFile
+
+	// Assert
+	assert.Equal(t, originalLen, fcg.FilesCount(), "FilesCount should remain unchanged")
+	assert.True(t, fcg.HasFile(initialFile), "Group should contain the initial file")
+	assert.False(t, fcg.HasFile(modifedFile), "Group should not contain the modified file")
+
+	// Verify original files are intact
+	assert.Equal(t, []string{initialFile}, fcg.Files(), "Internal files slice should be unchanged")
+}
+
 func TestFilesCheckGroup_CommonPathPrefix(t *testing.T) {
 	tests := []struct {
 		name     string
