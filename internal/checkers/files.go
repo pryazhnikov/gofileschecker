@@ -13,11 +13,14 @@ import (
 )
 
 type FilesCheckGroup struct {
-	hash  string // common hash for all files in the group
+	mu    sync.RWMutex // Protects access to files slice
+	hash  string       // common hash for all files in the group
 	files []string
 }
 
 func (fcg *FilesCheckGroup) HasFile(file string) bool {
+	fcg.mu.RLock()
+	defer fcg.mu.RUnlock()
 	return slices.Contains(fcg.files, file)
 }
 
@@ -26,6 +29,9 @@ func (fcg *FilesCheckGroup) addFile(file string) {
 		return
 	}
 
+	fcg.mu.Lock()
+	defer fcg.mu.Unlock()
+
 	// Using slices is not the best option from time complexity perspective,
 	// but we do not expected adding multiple files with the same hash many times.
 	// So keeping a bit simpler slice-based solution instead of a map-based alternative.
@@ -33,10 +39,14 @@ func (fcg *FilesCheckGroup) addFile(file string) {
 }
 
 func (fcg *FilesCheckGroup) Files() []string {
+	fcg.mu.RLock()
+	defer fcg.mu.RUnlock()
 	return fcg.files
 }
 
 func (fcg *FilesCheckGroup) FilesCount() int {
+	fcg.mu.RLock()
+	defer fcg.mu.RUnlock()
 	return len(fcg.files)
 }
 
@@ -89,6 +99,7 @@ func newFilesCheckGroup(hash string, file string) *FilesCheckGroup {
 	return &FilesCheckGroup{
 		hash:  hash,
 		files: []string{file},
+		mu:    sync.RWMutex{},
 	}
 }
 
