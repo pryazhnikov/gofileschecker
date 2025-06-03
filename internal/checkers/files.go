@@ -40,7 +40,11 @@ func (fcg *FilesCheckGroup) addFile(file string) {
 func (fcg *FilesCheckGroup) Files() []string {
 	fcg.mu.RLock()
 	defer fcg.mu.RUnlock()
-	return fcg.files
+
+	// Return a copy of the files slice to prevent external modifications
+	result := make([]string, len(fcg.files))
+	copy(result, fcg.files)
+	return result
 }
 
 func (fcg *FilesCheckGroup) FilesCount() int {
