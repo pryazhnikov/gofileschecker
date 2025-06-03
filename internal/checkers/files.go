@@ -55,6 +55,9 @@ func (fcg *FilesCheckGroup) HasMultipleFiles() bool {
 }
 
 func (fcg *FilesCheckGroup) CommonPathPrefix() string {
+	fcg.mu.RLock()
+	defer fcg.mu.RUnlock()
+
 	if len(fcg.files) == 0 {
 		return ""
 	}
