@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/pryazhnikov/gofileschecker/internal/checkers"
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
@@ -71,9 +72,15 @@ func main() {
 
 	fmt.Printf("Found %d duplicated files groups\n", len(fcg))
 	for _, fcg := range fcg {
-		fmt.Printf("Duplicated files group: %s\n", fcg.Hash())
+		commonPathPrefix := fcg.CommonPathPrefix()
+		fmt.Printf(
+			"Duplicated files group: %s (hash: %s)\n",
+			commonPathPrefix,
+			fcg.Hash(),
+		)
 		for _, file := range fcg.Files() {
-			fmt.Printf("- %s\n", file)
+			relFilePath := strings.TrimPrefix(file, commonPathPrefix)
+			fmt.Printf("- %s\n", relFilePath)
 		}
 
 		fmt.Println()

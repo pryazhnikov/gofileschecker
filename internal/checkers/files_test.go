@@ -78,3 +78,48 @@ func TestFilesCheckGroup_AddTheSameFile(t *testing.T) {
 	// Assert
 	assert.Equal(t, 1, fcg.FilesCount(), "The only file is expected after adding the same one again")
 }
+
+func TestFilesCheckGroup_CommonPathPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		files    []string
+		expected string
+	}{
+		{
+			name:     "single file without directory",
+			files:    []string{"file.txt"},
+			expected: "",
+		},
+		{
+			name:     "single file with directory",
+			files:    []string{"/path/to/file.txt"},
+			expected: "/path/to/",
+		},
+		{
+			name:     "two files in same directory",
+			files:    []string{"/path/to/file1.txt", "/path/to/file2.txt"},
+			expected: "/path/to/",
+		},
+		{
+			name:     "two files in different directories",
+			files:    []string{"/path/to/file1.txt", "/path/different/file2.txt"},
+			expected: "/path/",
+		},
+		{
+			name:     "three files with common prefix",
+			files:    []string{"/path/to/dir1/file1.txt", "/path/to/dir2/file2.txt", "/path/to/dir3/file3.txt"},
+			expected: "/path/to/",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create a FilesCheckGroup with a dummy hash
+			fcg := newFilesCheckGroup("dummy-hash", "")
+			fcg.files = tt.files // Override the files directly for testing
+
+			result := fcg.CommonPathPrefix()
+			assert.Equal(t, tt.expected, result, "CommonPathPrefix returned unexpected result")
+		})
+	}
+}

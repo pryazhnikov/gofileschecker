@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
@@ -41,6 +42,43 @@ func (fcg *FilesCheckGroup) FilesCount() int {
 
 func (fcg *FilesCheckGroup) HasMultipleFiles() bool {
 	return fcg.FilesCount() > 1
+}
+
+func (fcg *FilesCheckGroup) CommonPathPrefix() string {
+	if len(fcg.files) == 0 {
+		return ""
+	}
+
+	// For single file return its directory
+	if len(fcg.files) == 1 {
+		lastSlash := strings.LastIndex(fcg.files[0], "/")
+		if lastSlash == -1 {
+			return ""
+		}
+
+		return fcg.files[0][:lastSlash+1]
+	}
+
+	// Start with the first file's path
+	prefix := fcg.files[0]
+	for _, file := range fcg.files[1:] {
+		// Find the common prefix between current prefix and the file
+		for i := 0; i < len(prefix) && i < len(file); i++ {
+			if prefix[i] != file[i] {
+				prefix = prefix[:i]
+				break
+			}
+		}
+
+		// Ensure we don't cut in the middle of a directory name
+		lastSlash := strings.LastIndex(prefix, "/")
+		if lastSlash == -1 {
+			return ""
+		}
+		prefix = prefix[:lastSlash+1]
+	}
+
+	return prefix
 }
 
 func (fcg *FilesCheckGroup) Hash() string {
