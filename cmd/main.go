@@ -77,7 +77,7 @@ func main() {
 	}
 
 	scanRes := scanner.Summary()
-	logger.Debug().Msgf(
+	logger.Info().Msgf(
 		"Directories: %d, files: %d, errors: %d, skipped: %d",
 		scanRes.Directories(),
 		scanRes.Files(),
