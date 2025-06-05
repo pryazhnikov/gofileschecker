@@ -12,10 +12,10 @@ import (
 )
 
 type runParameters struct {
-	path            string // Path to directory for scanning
-	debug           bool   // Enable debug logging
-	showGroupPrefix bool   // Show common path prefix for the found groups
-	skipEmptyFiles  bool   // Do not process empty files
+	path           string // Path to directory for scanning
+	debug          bool   // Enable debug logging
+	fullFilePath   bool   // Show full file paths in output
+	skipEmptyFiles bool   // Do not process empty files
 }
 
 func parseParameters() (*runParameters, error) {
@@ -23,7 +23,7 @@ func parseParameters() (*runParameters, error) {
 
 	flag.StringVar(&params.path, "path", "", "Path to directory for scanning")
 	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
-	flag.BoolVar(&params.showGroupPrefix, "prefix", false, "Show common path prefix for file groups")
+	flag.BoolVar(&params.fullFilePath, "fullpath", false, "Show full file paths in output")
 	flag.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
 
 	flag.Parse()
@@ -83,17 +83,16 @@ func main() {
 			fcg.Hash(),
 		)
 
-		pathPrefix := ""
-		if params.showGroupPrefix {
-			pathPrefix = fcg.CommonPathPrefix()
-			if pathPrefix != "" {
-				fmt.Println(pathPrefix)
-			}
-		}
+		pathPrefix := fcg.CommonPathPrefix()
+		fmt.Printf("Location: %s\n", pathPrefix)
 
 		for _, file := range fcg.Files() {
-			relativePath := strings.TrimPrefix(file, pathPrefix)
-			fmt.Printf("- %s\n", relativePath)
+			fileView := file
+			if !params.fullFilePath {
+				fileView = strings.TrimPrefix(file, pathPrefix)
+			}
+
+			fmt.Printf("- %s\n", fileView)
 		}
 
 		fmt.Println()
