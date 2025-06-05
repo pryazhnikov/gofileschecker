@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sync"
 
 	"github.com/rs/zerolog"
 )
@@ -11,8 +12,11 @@ import (
 const summaryPeriod = 100
 
 type DirectoryScanner struct {
-	logger  zerolog.Logger
-	checker FileChecker
+	logger       zerolog.Logger
+	checker      FileChecker
+	scannedPaths map[string]bool
+	summary      *ScanSummary
+	mu           sync.RWMutex
 }
 
 type FileChecker interface {
@@ -21,17 +25,33 @@ type FileChecker interface {
 
 func NewDirectoryScanner(logger zerolog.Logger, checker FileChecker) *DirectoryScanner {
 	return &DirectoryScanner{
-		logger:  logger,
-		checker: checker,
+		logger:       logger,
+		checker:      checker,
+		scannedPaths: make(map[string]bool),
+		summary:      &ScanSummary{},
+		mu:           sync.RWMutex{},
 	}
 }
 
 func (ds *DirectoryScanner) Scan(rootPath string) error {
-	ds.logger.Info().Msgf("Starting directory scan: %s", rootPath)
+	// Get absolute path to handle different path formats pointing to same directory
+	absPath, err := filepath.Abs(rootPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
 
-	filesCnt := 0
-	errCnt := 0
-	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+	if ds.scannedPaths == nil {
+		return fmt.Errorf("scanned paths field is not initialized")
+	}
+
+	if ds.isPathScanned(absPath) {
+		ds.logger.Info().Msgf("Directory already scanned, skipping: %s", absPath)
+		return nil
+	}
+
+	ds.logger.Info().Msgf("Starting directory scan: %s", absPath)
+
+	err = filepath.WalkDir(absPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -41,30 +61,39 @@ func (ds *DirectoryScanner) Scan(rootPath string) error {
 		}
 
 		// todo: to implement processing retry later
-		err = ds.processFile(path)
-		if err != nil {
-			errCnt++
-		}
-
-		filesCnt++
-		if filesCnt%summaryPeriod == 0 {
-			ds.logger.Info().Msgf("%d files processed, errors: %d...", filesCnt, errCnt)
-		}
-
-		return nil
+		return ds.processFile(path)
 	})
 
 	if err != nil {
 		return fmt.Errorf("failed to scan directory: %w", err)
 	}
 
+	ds.markPathAsScanned(absPath)
 	return nil
+}
+
+func (ds *DirectoryScanner) Summary() ScanSummary {
+	// Return a copy of the summary to prevent external modifications
+	return *ds.summary
+}
+
+func (ds *DirectoryScanner) isPathScanned(absPath string) bool {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	return ds.scannedPaths[absPath]
+}
+
+func (ds *DirectoryScanner) markPathAsScanned(absPath string) {
+	ds.mu.Lock()
+	defer ds.mu.Unlock()
+	ds.scannedPaths[absPath] = true
 }
 
 func (ds *DirectoryScanner) processDirectory(path string) error {
 	ds.logger.Debug().
 		Str("path", path).
 		Msg("Directory found, nothing to do here.")
+	ds.summary.directories++
 	return nil
 }
 
@@ -73,11 +102,13 @@ func (ds *DirectoryScanner) processFile(path string) error {
 		Str("path", path).
 		Msg("File found, the check is expected")
 
+	ds.summary.files++
 	checkRes, err := ds.checker.Check(path)
 	if err != nil {
 		ds.logger.Warn().
 			Str("path", path).
 			Msgf("Cannot check file: %v", err)
+		ds.summary.errors++
 		return err
 	}
 
@@ -85,6 +116,14 @@ func (ds *DirectoryScanner) processFile(path string) error {
 		Str("path", path).
 		Str("hash", checkRes).
 		Msg("File was checked")
+
+	if ds.summary.files%summaryPeriod == 0 {
+		ds.logger.Info().Msgf(
+			"%d files processed, errors: %d...",
+			ds.summary.files,
+			ds.summary.errors,
+		)
+	}
 
 	return nil
 }

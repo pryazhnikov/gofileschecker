@@ -12,25 +12,30 @@ import (
 )
 
 type runParameters struct {
-	path           string // Path to directory for scanning
-	debug          bool   // Enable debug logging
-	fullFilePath   bool   // Show full file paths in output
-	skipEmptyFiles bool   // Do not process empty files
+	paths          []string // Paths to directories for scanning
+	debug          bool     // Enable debug logging
+	fullFilePath   bool     // Show full file paths in output
+	skipEmptyFiles bool     // Do not process empty files
 }
 
 func parseParameters() (*runParameters, error) {
-	params := &runParameters{}
+	params := &runParameters{
+		paths: make([]string, 0),
+	}
 
-	flag.StringVar(&params.path, "path", "", "Path to directory for scanning")
 	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
 	flag.BoolVar(&params.fullFilePath, "fullpath", false, "Show full file paths in output")
 	flag.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
+	flag.Func("path", "Path to directory for scanning", func(flagValue string) error {
+		params.paths = append(params.paths, flagValue)
+		return nil
+	})
 
 	flag.Parse()
 
 	// Validate required parameters
-	if params.path == "" {
-		return nil, fmt.Errorf("path parameter is required")
+	if len(params.paths) == 0 {
+		return nil, fmt.Errorf("at least one path parameter is required")
 	}
 
 	return params, nil
@@ -62,12 +67,25 @@ func main() {
 	fileChecker := checkers.NewFileChecker(params.skipEmptyFiles)
 	scanner := scanner.NewDirectoryScanner(logger, fileChecker)
 
-	// todo: add an ability to scan multiple directories
-	err = scanner.Scan(params.path)
-	if err != nil {
-		logger.Fatal().Err(err).Msg("Cannot scan directory")
+	// Scanning all directories
+	for _, path := range params.paths {
+		logger.Info().Msgf("Path to process: %s", path)
+		err = scanner.Scan(path)
+		if err != nil {
+			logger.Fatal().Err(err).Msgf("Cannot scan directory: %s", path)
+		}
 	}
 
+	scanRes := scanner.Summary()
+	logger.Info().Msgf(
+		"Directories: %d, files: %d, errors: %d, skipped: %d",
+		scanRes.Directories(),
+		scanRes.Files(),
+		scanRes.Errors(),
+		scanRes.Skipped(),
+	)
+
+	// Results combining
 	logger.Info().Msg("Directory scan completed, getting the results...")
 
 	fcg := fileChecker.GetDuplicatedFileGroups()
