@@ -85,8 +85,8 @@ func (ds *DirectoryScanner) isPathScanned(absPath string) bool {
 
 func (ds *DirectoryScanner) markPathAsScanned(absPath string) {
 	ds.mu.Lock()
+	defer ds.mu.Unlock()
 	ds.scannedPaths[absPath] = true
-	ds.mu.Unlock()
 }
 
 func (ds *DirectoryScanner) processDirectory(path string) error {
