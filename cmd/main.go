@@ -76,6 +76,15 @@ func main() {
 		}
 	}
 
+	scanRes := scanner.Summary()
+	logger.Debug().Msgf(
+		"Directories: %d, files: %d, errors: %d, skipped: %d",
+		scanRes.Directories(),
+		scanRes.Files(),
+		scanRes.Errors(),
+		scanRes.Skipped(),
+	)
+
 	// Results combining
 	logger.Info().Msg("Directory scan completed, getting the results...")
 

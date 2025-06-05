@@ -15,6 +15,7 @@ type DirectoryScanner struct {
 	logger       zerolog.Logger
 	checker      FileChecker
 	scannedPaths map[string]bool
+	summary      *ScanSummary
 	mu           sync.RWMutex
 }
 
@@ -27,6 +28,7 @@ func NewDirectoryScanner(logger zerolog.Logger, checker FileChecker) *DirectoryS
 		logger:       logger,
 		checker:      checker,
 		scannedPaths: make(map[string]bool),
+		summary:      &ScanSummary{},
 		mu:           sync.RWMutex{},
 	}
 }
@@ -83,6 +85,11 @@ func (ds *DirectoryScanner) Scan(rootPath string) error {
 	return nil
 }
 
+func (ds *DirectoryScanner) Summary() ScanSummary {
+	// Return a copy of the summary to prevent external modifications
+	return *ds.summary
+}
+
 func (ds *DirectoryScanner) isPathScanned(absPath string) bool {
 	ds.mu.RLock()
 	defer ds.mu.RUnlock()
@@ -99,6 +106,7 @@ func (ds *DirectoryScanner) processDirectory(path string) error {
 	ds.logger.Debug().
 		Str("path", path).
 		Msg("Directory found, nothing to do here.")
+	ds.summary.directories++
 	return nil
 }
 
@@ -107,11 +115,13 @@ func (ds *DirectoryScanner) processFile(path string) error {
 		Str("path", path).
 		Msg("File found, the check is expected")
 
+	ds.summary.files++
 	checkRes, err := ds.checker.Check(path)
 	if err != nil {
 		ds.logger.Warn().
 			Str("path", path).
 			Msgf("Cannot check file: %v", err)
+		ds.summary.errors++
 		return err
 	}
 
