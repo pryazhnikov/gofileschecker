@@ -12,7 +12,6 @@ import (
 )
 
 type runParameters struct {
-	path           string   // Deprecated: path to directory for scanning
 	paths          []string // Paths to directories for scanning
 	debug          bool     // Enable debug logging
 	fullFilePath   bool     // Show full file paths in output
@@ -29,17 +28,12 @@ func parseParameters() (*runParameters, error) {
 	flag.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
 	flag.Func("path", "Path to directory for scanning", func(flagValue string) error {
 		params.paths = append(params.paths, flagValue)
-		params.path = flagValue // Keep for backwards compatibility
 		return nil
 	})
 
 	flag.Parse()
 
 	// Validate required parameters
-	if params.path == "" {
-		return nil, fmt.Errorf("path parameter is required")
-	}
-
 	if len(params.paths) == 0 {
 		return nil, fmt.Errorf("at least one path parameter is required")
 	}
