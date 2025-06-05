@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"sync"
 
 	"github.com/rs/zerolog"
 )
@@ -11,8 +12,10 @@ import (
 const summaryPeriod = 100
 
 type DirectoryScanner struct {
-	logger  zerolog.Logger
-	checker FileChecker
+	logger       zerolog.Logger
+	checker      FileChecker
+	scannedPaths map[string]bool
+	mu           sync.RWMutex
 }
 
 type FileChecker interface {
@@ -21,17 +24,35 @@ type FileChecker interface {
 
 func NewDirectoryScanner(logger zerolog.Logger, checker FileChecker) *DirectoryScanner {
 	return &DirectoryScanner{
-		logger:  logger,
-		checker: checker,
+		logger:       logger,
+		checker:      checker,
+		scannedPaths: make(map[string]bool),
+		mu:           sync.RWMutex{},
 	}
 }
 
 func (ds *DirectoryScanner) Scan(rootPath string) error {
-	ds.logger.Info().Msgf("Starting directory scan: %s", rootPath)
+	// Get absolute path to handle different path formats pointing to same directory
+	absPath, err := filepath.Abs(rootPath)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path: %w", err)
+	}
+
+	// Initialize scanned paths map if not exists
+	if ds.scannedPaths == nil {
+		return fmt.Errorf("scanned paths is not initialized")
+	}
+
+	if ds.isPathScanned(absPath) {
+		ds.logger.Info().Msgf("Directory already scanned, skipping: %s", absPath)
+		return nil
+	}
+
+	ds.logger.Info().Msgf("Starting directory scan: %s", absPath)
 
 	filesCnt := 0
 	errCnt := 0
-	err := filepath.WalkDir(rootPath, func(path string, d fs.DirEntry, err error) error {
+	err = filepath.WalkDir(absPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -58,7 +79,20 @@ func (ds *DirectoryScanner) Scan(rootPath string) error {
 		return fmt.Errorf("failed to scan directory: %w", err)
 	}
 
+	ds.markPathAsScanned(absPath)
 	return nil
+}
+
+func (ds *DirectoryScanner) isPathScanned(absPath string) bool {
+	ds.mu.RLock()
+	defer ds.mu.RUnlock()
+	return ds.scannedPaths[absPath]
+}
+
+func (ds *DirectoryScanner) markPathAsScanned(absPath string) {
+	ds.mu.Lock()
+	ds.scannedPaths[absPath] = true
+	ds.mu.Unlock()
 }
 
 func (ds *DirectoryScanner) processDirectory(path string) error {
