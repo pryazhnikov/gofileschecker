@@ -1,4 +1,4 @@
-package main
+package parameters
 
 import (
 	"os"
@@ -17,7 +17,7 @@ func TestParseParameters(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    []string
-		want    *runParameters
+		want    *RunParameters
 		wantErr bool
 	}{
 		{
@@ -35,11 +35,11 @@ func TestParseParameters(t *testing.T) {
 		{
 			name: "valid parameters",
 			args: []string{"prog", "-path", "/test/path", "-debug", "-fullpath", "-skipempty"},
-			want: &runParameters{
-				paths:          []string{"/test/path"},
-				debug:          true,
-				fullFilePath:   true,
-				skipEmptyFiles: true,
+			want: &RunParameters{
+				Paths:          []string{"/test/path"},
+				Debug:          true,
+				FullFilePath:   true,
+				SkipEmptyFiles: true,
 			},
 			wantErr: false,
 		},
@@ -52,22 +52,22 @@ func TestParseParameters(t *testing.T) {
 		{
 			name: "only path parameter",
 			args: []string{"prog", "-path", "/test/path"},
-			want: &runParameters{
-				paths:          []string{"/test/path"},
-				debug:          false,
-				fullFilePath:   false,
-				skipEmptyFiles: false,
+			want: &RunParameters{
+				Paths:          []string{"/test/path"},
+				Debug:          false,
+				FullFilePath:   false,
+				SkipEmptyFiles: false,
 			},
 			wantErr: false,
 		},
 		{
 			name: "multiple path parameters",
 			args: []string{"prog", "-path", "/test/path1", "-path", "/test/path2"},
-			want: &runParameters{
-				paths:          []string{"/test/path1", "/test/path2"},
-				debug:          false,
-				fullFilePath:   false,
-				skipEmptyFiles: false,
+			want: &RunParameters{
+				Paths:          []string{"/test/path1", "/test/path2"},
+				Debug:          false,
+				FullFilePath:   false,
+				SkipEmptyFiles: false,
 			},
 			wantErr: false,
 		},
@@ -75,7 +75,7 @@ func TestParseParameters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			parser := newRunParametersParser()
+			parser := NewRunParametersParser()
 			got, err := parser.Parse(tt.args)
 			if tt.wantErr {
 				assert.Error(t, err, "An error is expected")
@@ -83,10 +83,10 @@ func TestParseParameters(t *testing.T) {
 			}
 
 			assert.NoError(t, err, "parseParameters() should not return an error")
-			assert.Equal(t, tt.want.paths, got.paths, "wrong paths value")
-			assert.Equal(t, tt.want.debug, got.debug, "wrong value of debug flag")
-			assert.Equal(t, tt.want.fullFilePath, got.fullFilePath, "wrong value of fullFilePath flag")
-			assert.Equal(t, tt.want.skipEmptyFiles, got.skipEmptyFiles, "wrong value of skipEmptyFiles flag")
+			assert.Equal(t, tt.want.Paths, got.Paths, "wrong paths value")
+			assert.Equal(t, tt.want.Debug, got.Debug, "wrong value of debug flag")
+			assert.Equal(t, tt.want.FullFilePath, got.FullFilePath, "wrong value of fullFilePath flag")
+			assert.Equal(t, tt.want.SkipEmptyFiles, got.SkipEmptyFiles, "wrong value of skipEmptyFiles flag")
 		})
 	}
 }

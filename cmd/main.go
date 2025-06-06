@@ -1,78 +1,15 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/pryazhnikov/gofileschecker/internal/checkers"
+	"github.com/pryazhnikov/gofileschecker/internal/parameters"
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
 	"github.com/rs/zerolog"
 )
-
-type runParameters struct {
-	paths          []string // Paths to directories for scanning
-	debug          bool     // Enable debug logging
-	fullFilePath   bool     // Show full file paths in output
-	skipEmptyFiles bool     // Do not process empty files
-}
-
-type runParametersParser struct {
-	parsedParams *runParameters
-}
-
-func newRunParametersParser() *runParametersParser {
-	parser := &runParametersParser{
-		parsedParams: nil, // It should be initialized at Parse() method
-	}
-
-	return parser
-}
-
-func (p *runParametersParser) initFlagSet(name string) (*flag.FlagSet, *runParameters) {
-	parsedParams := &runParameters{
-		paths: make([]string, 0),
-	}
-	flagSet := flag.NewFlagSet(name, flag.ContinueOnError)
-	flagSet.BoolVar(&parsedParams.debug, "debug", false, "Enable debug logging")
-	flagSet.BoolVar(&parsedParams.fullFilePath, "fullpath", false, "Show full file paths in output")
-	flagSet.BoolVar(&parsedParams.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
-	flagSet.Func("path", "Path to directory for scanning (multiple usage is allowed)", func(flagValue string) error {
-		parsedParams.paths = append(parsedParams.paths, flagValue)
-		return nil
-	})
-
-	return flagSet, parsedParams
-}
-
-func (p *runParametersParser) Parse(args []string) (*runParameters, error) {
-	if len(args) < 1 {
-		return nil, fmt.Errorf("no arguments provided")
-	}
-
-	flagSet, parsedParams := p.initFlagSet(args[0])
-	if err := flagSet.Parse(args[1:]); err != nil {
-		return nil, err
-	}
-
-	// Validate required parameters
-	p.parsedParams = parsedParams
-	if len(parsedParams.paths) == 0 {
-		return nil, fmt.Errorf("at least one path parameter is required")
-	}
-
-	return parsedParams, nil
-}
-
-func (p *runParametersParser) IsParsed() bool {
-	return p.parsedParams != nil
-}
-
-func (p *runParametersParser) Usage() {
-	flagSet, _ := p.initFlagSet("gofilechecker")
-	flagSet.Usage()
-}
 
 func newLogger(debug bool) zerolog.Logger {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -87,7 +24,7 @@ func newLogger(debug bool) zerolog.Logger {
 }
 
 func main() {
-	paramsParser := newRunParametersParser()
+	paramsParser := parameters.NewRunParametersParser()
 	params, err := paramsParser.Parse(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
@@ -95,14 +32,14 @@ func main() {
 		os.Exit(1)
 	}
 
-	logger := newLogger(params.debug)
+	logger := newLogger(params.Debug)
 	logger.Info().Msgf("Logger level set: %s", logger.GetLevel().String())
 
-	fileChecker := checkers.NewFileChecker(params.skipEmptyFiles)
+	fileChecker := checkers.NewFileChecker(params.SkipEmptyFiles)
 	scanner := scanner.NewDirectoryScanner(logger, fileChecker)
 
 	// Scanning all directories
-	for _, path := range params.paths {
+	for _, path := range params.Paths {
 		logger.Info().Msgf("Path to process: %s", path)
 		err = scanner.Scan(path)
 		if err != nil {
@@ -140,7 +77,7 @@ func main() {
 
 		for _, file := range fcg.Files() {
 			fileView := file
-			if !params.fullFilePath {
+			if !params.FullFilePath {
 				fileView = strings.TrimPrefix(file, pathPrefix)
 			}
 
