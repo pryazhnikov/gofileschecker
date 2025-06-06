@@ -1,45 +1,15 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/pryazhnikov/gofileschecker/internal/checkers"
+	"github.com/pryazhnikov/gofileschecker/internal/parameters"
 	"github.com/pryazhnikov/gofileschecker/internal/scanner"
 	"github.com/rs/zerolog"
 )
-
-type runParameters struct {
-	paths          []string // Paths to directories for scanning
-	debug          bool     // Enable debug logging
-	fullFilePath   bool     // Show full file paths in output
-	skipEmptyFiles bool     // Do not process empty files
-}
-
-func parseParameters() (*runParameters, error) {
-	params := &runParameters{
-		paths: make([]string, 0),
-	}
-
-	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
-	flag.BoolVar(&params.fullFilePath, "fullpath", false, "Show full file paths in output")
-	flag.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
-	flag.Func("path", "Path to directory for scanning", func(flagValue string) error {
-		params.paths = append(params.paths, flagValue)
-		return nil
-	})
-
-	flag.Parse()
-
-	// Validate required parameters
-	if len(params.paths) == 0 {
-		return nil, fmt.Errorf("at least one path parameter is required")
-	}
-
-	return params, nil
-}
 
 func newLogger(debug bool) zerolog.Logger {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
@@ -54,21 +24,22 @@ func newLogger(debug bool) zerolog.Logger {
 }
 
 func main() {
-	params, err := parseParameters()
+	paramsParser := parameters.NewRunParametersParser()
+	params, err := paramsParser.Parse(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
-		flag.Usage()
+		paramsParser.Usage()
 		os.Exit(1)
 	}
 
-	logger := newLogger(params.debug)
+	logger := newLogger(params.Debug)
 	logger.Info().Msgf("Logger level set: %s", logger.GetLevel().String())
 
-	fileChecker := checkers.NewFileChecker(params.skipEmptyFiles)
+	fileChecker := checkers.NewFileChecker(params.SkipEmptyFiles)
 	scanner := scanner.NewDirectoryScanner(logger, fileChecker)
 
 	// Scanning all directories
-	for _, path := range params.paths {
+	for _, path := range params.Paths {
 		logger.Info().Msgf("Path to process: %s", path)
 		err = scanner.Scan(path)
 		if err != nil {
@@ -106,7 +77,7 @@ func main() {
 
 		for _, file := range fcg.Files() {
 			fileView := file
-			if !params.fullFilePath {
+			if !params.FullFilePath {
 				fileView = strings.TrimPrefix(file, pathPrefix)
 			}
 
