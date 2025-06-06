@@ -18,20 +18,27 @@ type runParameters struct {
 	skipEmptyFiles bool     // Do not process empty files
 }
 
-func parseParameters() (*runParameters, error) {
+func parseParameters(args []string) (*runParameters, error) {
+	if len(args) < 1 {
+		return nil, fmt.Errorf("no arguments provided")
+	}
+
 	params := &runParameters{
 		paths: make([]string, 0),
 	}
 
-	flag.BoolVar(&params.debug, "debug", false, "Enable debug logging")
-	flag.BoolVar(&params.fullFilePath, "fullpath", false, "Show full file paths in output")
-	flag.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
-	flag.Func("path", "Path to directory for scanning", func(flagValue string) error {
+	flagSet := flag.NewFlagSet(args[0], flag.ContinueOnError)
+	flagSet.BoolVar(&params.debug, "debug", false, "Enable debug logging")
+	flagSet.BoolVar(&params.fullFilePath, "fullpath", false, "Show full file paths in output")
+	flagSet.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
+	flagSet.Func("path", "Path to directory for scanning (multiple usage is allowed)", func(flagValue string) error {
 		params.paths = append(params.paths, flagValue)
 		return nil
 	})
 
-	flag.Parse()
+	if err := flagSet.Parse(args[1:]); err != nil {
+		return nil, err
+	}
 
 	// Validate required parameters
 	if len(params.paths) == 0 {
@@ -54,7 +61,7 @@ func newLogger(debug bool) zerolog.Logger {
 }
 
 func main() {
-	params, err := parseParameters()
+	params, err := parseParameters(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
 		flag.Usage()
