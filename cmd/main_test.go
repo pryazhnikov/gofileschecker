@@ -75,7 +75,8 @@ func TestParseParameters(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := parseParameters(tt.args)
+			parser := newRunParametersParser()
+			got, err := parser.Parse(tt.args)
 			if tt.wantErr {
 				assert.Error(t, err, "An error is expected")
 				return

@@ -18,34 +18,60 @@ type runParameters struct {
 	skipEmptyFiles bool     // Do not process empty files
 }
 
-func parseParameters(args []string) (*runParameters, error) {
+type runParametersParser struct {
+	parsedParams *runParameters
+}
+
+func newRunParametersParser() *runParametersParser {
+	parser := &runParametersParser{
+		parsedParams: nil, // It should be initialized at Parse() method
+	}
+
+	return parser
+}
+
+func (p *runParametersParser) initFlagSet(name string) (*flag.FlagSet, *runParameters) {
+	parsedParams := &runParameters{
+		paths: make([]string, 0),
+	}
+	flagSet := flag.NewFlagSet(name, flag.ContinueOnError)
+	flagSet.BoolVar(&parsedParams.debug, "debug", false, "Enable debug logging")
+	flagSet.BoolVar(&parsedParams.fullFilePath, "fullpath", false, "Show full file paths in output")
+	flagSet.BoolVar(&parsedParams.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
+	flagSet.Func("path", "Path to directory for scanning (multiple usage is allowed)", func(flagValue string) error {
+		parsedParams.paths = append(parsedParams.paths, flagValue)
+		return nil
+	})
+
+	return flagSet, parsedParams
+}
+
+func (p *runParametersParser) Parse(args []string) (*runParameters, error) {
 	if len(args) < 1 {
 		return nil, fmt.Errorf("no arguments provided")
 	}
 
-	params := &runParameters{
-		paths: make([]string, 0),
-	}
-
-	flagSet := flag.NewFlagSet(args[0], flag.ContinueOnError)
-	flagSet.BoolVar(&params.debug, "debug", false, "Enable debug logging")
-	flagSet.BoolVar(&params.fullFilePath, "fullpath", false, "Show full file paths in output")
-	flagSet.BoolVar(&params.skipEmptyFiles, "skipempty", false, "Skip empty files during scanning")
-	flagSet.Func("path", "Path to directory for scanning (multiple usage is allowed)", func(flagValue string) error {
-		params.paths = append(params.paths, flagValue)
-		return nil
-	})
-
+	flagSet, parsedParams := p.initFlagSet(args[0])
 	if err := flagSet.Parse(args[1:]); err != nil {
 		return nil, err
 	}
 
 	// Validate required parameters
-	if len(params.paths) == 0 {
+	p.parsedParams = parsedParams
+	if len(parsedParams.paths) == 0 {
 		return nil, fmt.Errorf("at least one path parameter is required")
 	}
 
-	return params, nil
+	return parsedParams, nil
+}
+
+func (p *runParametersParser) IsParsed() bool {
+	return p.parsedParams != nil
+}
+
+func (p *runParametersParser) Usage() {
+	flagSet, _ := p.initFlagSet("gofilechecker")
+	flagSet.Usage()
 }
 
 func newLogger(debug bool) zerolog.Logger {
@@ -61,10 +87,11 @@ func newLogger(debug bool) zerolog.Logger {
 }
 
 func main() {
-	params, err := parseParameters(os.Args)
+	paramsParser := newRunParametersParser()
+	params, err := paramsParser.Parse(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
-		flag.Usage()
+		paramsParser.Usage()
 		os.Exit(1)
 	}
 
