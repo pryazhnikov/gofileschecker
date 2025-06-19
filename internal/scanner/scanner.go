@@ -93,7 +93,7 @@ func (ds *DirectoryScanner) processDirectory(path string) error {
 	ds.logger.Debug().
 		Str("path", path).
 		Msg("Directory found, nothing to do here.")
-	ds.summary.directories++
+	ds.summary.AddDirectory()
 	return nil
 }
 
@@ -102,13 +102,13 @@ func (ds *DirectoryScanner) processFile(path string) error {
 		Str("path", path).
 		Msg("File found, the check is expected")
 
-	ds.summary.files++
+	ds.summary.AddFile()
 	checkRes, err := ds.checker.Check(path)
 	if err != nil {
 		ds.logger.Warn().
 			Str("path", path).
 			Msgf("Cannot check file: %v", err)
-		ds.summary.errors++
+		ds.summary.AddError()
 		return err
 	}
 
@@ -117,11 +117,11 @@ func (ds *DirectoryScanner) processFile(path string) error {
 		Str("hash", checkRes).
 		Msg("File was checked")
 
-	if ds.summary.files%summaryPeriod == 0 {
+	if ds.summary.Files()%summaryPeriod == 0 {
 		ds.logger.Info().Msgf(
 			"%d files processed, errors: %d...",
-			ds.summary.files,
-			ds.summary.errors,
+			ds.summary.Files(),
+			ds.summary.Errors(),
 		)
 	}
 
