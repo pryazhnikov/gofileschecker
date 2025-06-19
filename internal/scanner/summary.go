@@ -22,3 +22,19 @@ func (s ScanSummary) Errors() int {
 func (s ScanSummary) Skipped() int {
 	return s.skipped
 }
+
+func (s *ScanSummary) AddFile() {
+	s.files++
+}
+
+func (s *ScanSummary) AddDirectory() {
+	s.directories++
+}
+
+func (s *ScanSummary) AddError() {
+	s.errors++
+}
+
+func (s *ScanSummary) AddSkipped() {
+	s.skipped++
+}
