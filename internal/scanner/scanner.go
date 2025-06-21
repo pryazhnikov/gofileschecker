@@ -15,7 +15,7 @@ type DirectoryScanner struct {
 	logger       zerolog.Logger
 	checker      FileChecker
 	scannedPaths map[string]bool
-	summary      *ScanSummary
+	summary      *ScanSummaryCollector
 	mu           sync.RWMutex
 }
 
@@ -28,7 +28,7 @@ func NewDirectoryScanner(logger zerolog.Logger, checker FileChecker) *DirectoryS
 		logger:       logger,
 		checker:      checker,
 		scannedPaths: make(map[string]bool),
-		summary:      &ScanSummary{},
+		summary:      &ScanSummaryCollector{},
 		mu:           sync.RWMutex{},
 	}
 }

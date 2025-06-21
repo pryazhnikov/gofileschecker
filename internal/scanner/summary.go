@@ -25,60 +25,60 @@ func (s ScanSummaryStats) Skipped() int {
 	return s.skipped
 }
 
-type ScanSummary struct {
+type ScanSummaryCollector struct {
 	data ScanSummaryStats
 	mu   sync.RWMutex
 }
 
-func (s *ScanSummary) Files() int {
+func (s *ScanSummaryCollector) Files() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.data.files
 }
 
-func (s *ScanSummary) Directories() int {
+func (s *ScanSummaryCollector) Directories() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.data.directories
 }
 
-func (s *ScanSummary) Errors() int {
+func (s *ScanSummaryCollector) Errors() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.data.errors
 }
 
-func (s *ScanSummary) Skipped() int {
+func (s *ScanSummaryCollector) Skipped() int {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.data.skipped
 }
 
-func (s *ScanSummary) AddFile() {
+func (s *ScanSummaryCollector) AddFile() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data.files++
 }
 
-func (s *ScanSummary) AddDirectory() {
+func (s *ScanSummaryCollector) AddDirectory() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data.directories++
 }
 
-func (s *ScanSummary) AddError() {
+func (s *ScanSummaryCollector) AddError() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data.errors++
 }
 
-func (s *ScanSummary) AddSkipped() {
+func (s *ScanSummaryCollector) AddSkipped() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.data.skipped++
 }
 
-func (s *ScanSummary) Stats() ScanSummaryStats {
+func (s *ScanSummaryCollector) Stats() ScanSummaryStats {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.data
