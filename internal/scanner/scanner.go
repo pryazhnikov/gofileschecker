@@ -15,7 +15,7 @@ type DirectoryScanner struct {
 	logger       zerolog.Logger
 	checker      FileChecker
 	scannedPaths map[string]bool
-	summary      *ScanSummary
+	summary      *ScanSummaryCollector
 	mu           sync.RWMutex
 }
 
@@ -28,7 +28,7 @@ func NewDirectoryScanner(logger zerolog.Logger, checker FileChecker) *DirectoryS
 		logger:       logger,
 		checker:      checker,
 		scannedPaths: make(map[string]bool),
-		summary:      &ScanSummary{},
+		summary:      &ScanSummaryCollector{},
 		mu:           sync.RWMutex{},
 	}
 }
@@ -50,7 +50,6 @@ func (ds *DirectoryScanner) Scan(rootPath string) error {
 	}
 
 	ds.logger.Info().Msgf("Starting directory scan: %s", absPath)
-
 	err = filepath.WalkDir(absPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -72,9 +71,8 @@ func (ds *DirectoryScanner) Scan(rootPath string) error {
 	return nil
 }
 
-func (ds *DirectoryScanner) Summary() ScanSummary {
-	// Return a copy of the summary to prevent external modifications
-	return *ds.summary
+func (ds *DirectoryScanner) Summary() ScanSummaryStats {
+	return ds.summary.Stats()
 }
 
 func (ds *DirectoryScanner) isPathScanned(absPath string) bool {

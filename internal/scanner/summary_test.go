@@ -8,7 +8,7 @@ import (
 
 func TestScanSummary_InitialState(t *testing.T) {
 	// Arrange & Act
-	summary := &ScanSummary{}
+	summary := &ScanSummaryCollector{}
 
 	// Assert
 	assert.Equal(t, 0, summary.Files(), "Files should be 0 initially")
@@ -19,7 +19,7 @@ func TestScanSummary_InitialState(t *testing.T) {
 
 func TestScanSummary_AddFile(t *testing.T) {
 	// Arrange
-	summary := &ScanSummary{}
+	summary := &ScanSummaryCollector{}
 
 	// Act
 	summary.AddFile()
@@ -33,7 +33,7 @@ func TestScanSummary_AddFile(t *testing.T) {
 
 func TestScanSummary_AddDirectory(t *testing.T) {
 	// Arrange
-	summary := &ScanSummary{}
+	summary := &ScanSummaryCollector{}
 
 	// Act
 	summary.AddDirectory()
@@ -47,7 +47,7 @@ func TestScanSummary_AddDirectory(t *testing.T) {
 
 func TestScanSummary_AddError(t *testing.T) {
 	// Arrange
-	summary := &ScanSummary{}
+	summary := &ScanSummaryCollector{}
 
 	// Act
 	summary.AddError()
@@ -61,7 +61,7 @@ func TestScanSummary_AddError(t *testing.T) {
 
 func TestScanSummary_AddSkipped(t *testing.T) {
 	// Arrange
-	summary := &ScanSummary{}
+	summary := &ScanSummaryCollector{}
 
 	// Act
 	summary.AddSkipped()
@@ -75,7 +75,7 @@ func TestScanSummary_AddSkipped(t *testing.T) {
 
 func TestScanSummary_MultipleIncrements(t *testing.T) {
 	// Arrange
-	summary := &ScanSummary{}
+	summary := &ScanSummaryCollector{}
 
 	// Act
 	summary.AddFile()
